@@ -18,9 +18,11 @@ library(tidyverse)
 library(magrittr)
 library(lubridate)
 library(GGally)
+library(broom)
 library(corrplot)
 library(kableExtra)
 library(gridExtra)
+library(ggridges)
 library(knitr)
 library(ggplot2)
 library(naniar)
@@ -282,21 +284,22 @@ pred_df %>%
 
 We can see that the linear regression model with the quadratic term fits the data better than the simple linear model. The quadratic model captures the non-linear relationship between age and completion time. The quadratic model shows that completion time decreases until roughly age 25, remains low and steady until age 35, and then increases. The linear model, on the other hand, does not capture the non-linear relationship between age and completion time. That being said, the model with the quadratic term is by no means perfect. We can see that the model does not capture the variance in completion time well as age increases. 
 
-All in all, if we trust the model with the quadratic term, we can say that--all else equal--for $x$ additional years in age, completion time changes by $-49003 \cdot x + 676 \cdot x^2$ seconds. 
-
 ```{r}
 # Use modelsummary to display the models
-modelsummary::modelsummary(list(
-  "Linear Model (Simple)" = lm_age_simple,
-  "Linear Model (Quadratic)" = lm_age_sq
-  )
+modelsummary::modelsummary(
+  list(
+    "Linear Model (Simple)" = lm_age_simple,
+    "Linear Model (Quadratic)" = lm_age_sq
+  ),
+  title = "Comparison of Simple and Quadratic Linear Models for Age and Completion Time",
 )
 
 ```
+All in all, according to the model with the quadratic term, we can say that--all else equal--for $x$ additional years in age, completion time changes by $-49003 \cdot x + 676 \cdot x^2$ seconds. 
 
 # Aim 2: Explore the impact of environmental conditions on marathon performance
 
-Next, we are interested in the impact of environmental conditions on marathon performance. To start, let us examine some summary statistics of the weather variables by location. 
+Next, we are interested in the impact of environmental conditions on marathon performance. 
 
 ```{r}
 # Create a correlation matrix of weather measures
@@ -328,33 +331,35 @@ summary_by_location <- summary_by_location %>%
   arrange(location)
 
 # Create kable table with alternating row colors
-knitr::kable(summary_by_location, 
-      booktabs = TRUE,
-      caption = "Summary of Weather Variables by Location") 
+#knitr::kable(summary_by_location, 
+#      booktabs = TRUE,
+#      caption = "Summary of Weather Variables by Location") 
 
 ```
 
-From this table, it becomes apparent that the "Grandmas" Duluth marathon has a slightly higher temperature mean than the other marathons. The "Grandmas" Duluth marathon also has the highest solar radiation and dew point mean. This suggests that the "Grandmas" Duluth marathon is the "warmest" marathon. Now, when analyzing which weather variables have the largest impact on marathon performance, we have to take correlations into account. This is especially important if the analyst attempts to model the relationship between weather variables and marathon performance. High correlations between explanatory variables can lead to multicollinearity, which can cause estimation issues. That is why we will first examine the correlation matrix of the weather variables.
+Exploratory analysis shows that the "Grandmas" Duluth marathon has a slightly higher temperature mean than the other marathons. The "Grandmas" Duluth marathon also has the highest solar radiation and dew point mean. With the "Grandmas" Duluth marathon being the warmest, it would be interesting to see whether completion times are uniformly higher. To visually examine this hypothesis, we will create a ridge plot of completion times by location.
 
-```{r, fig.width=6, fig.height=4, fig.align="center"}
-# Calculate the correlation matrix
-cor_matrix <- cor(main_dta[weather_vars], use = "complete.obs")
 
-# Create a correlation matrix plot
-corrplot(cor_matrix, 
-         method = "circle", # or "number", "shade", etc.
-         type = "upper", # only show upper triangle
-         tl.col = "black", # text color
-         tl.srt = 45, # text rotation
-         addCoef.col = "black", # add correlation coefficients
-         diag = FALSE) # hide the diagonal
+```{r, fig.width=8, fig.height=6}
+# Ridge plot
+ggplot(main_dta, aes(x = completion_time, y = location, fill = location)) +
+  geom_density_ridges(alpha = 0.7, size = 0.8, scale = 1.2) +  # Ridge plot with densities
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),  # Center title and bold
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),  # Adjust x-axis text
+    axis.title.y = element_text(),  
+    panel.grid.major = element_line(color = "lightgray"),  # Light gray gridlines
+    panel.grid.minor = element_blank()  # Remove minor gridlines
+  ) + 
+  labs(title = "Completion Times by Location",
+       x = "Completion Time [seconds]",
+       y = "Location") +
+  scale_fill_viridis_d()  # Adjust color scale for the fill
 ```
+Interestingly, the ridge plot shows that there are no significant differences in completion times across locations. This suggests that the differences in weather conditions across locations do not have a significant impact on baseline completion times.
 
-We can immediately see that there are strong correlation within the weather variables. For example, `wbgt` (wet bulb globe temperature) is highly correlated with `tw_c` (temperature in Celsius) and `dp` (dew point). Of course, some of these strong correlations are to be expected, as WGBT is derived from temperature. 
-
-Now, let us turn to the relationship between completion time and weather variables. We will start by examining the relationship between completion time and the weather variable `flag`. The `flag` variable is based on the Wet Bulb Globe Temperature (WBGT) and the risk of heat illness. Exploratory analysis that is not reported suggests that the curvature of the best fit curve is similar across the flag categories. A more notable difference is the intercept of the regression line. This suggests that the impact of the flag on completion time is relatively constant across different ages. That being said, it remains interesting to see whether the impact of weather (i.e. `flag`) on completion time differs across performance groups. This hypothesis could be based on the assumption that less strong runners are more susceptible to heat effects. 
-
-We will now classify runners into performance quartiles and examine the relationship between completion time and flag. 
+Although there is little evidence that completion times are affected uniformly by temperature variables, we can see slight bimodal trends in the ridge plot in the "Grandmas" Duluth marathon. Potentially, this could be evidence for weather affecting runners differently by performance group. To test whether the relationship between weather and performance varies by performance group, we classify runners into performance quartiles and examine the relationship between completion time and `flag`. The `flag` variable is based on the Wet Bulb Globe Temperature (WBGT) and the risk of heat illness.
 
 ```{r, fig.width=10, fig.height=8, fig.align="center"}
 # Create performance quartiles
@@ -385,7 +390,7 @@ Despite accounting for the performance quartiles, there is little to no noticeab
 
 # Aim 3: Identify the weather parameters that have the largest impact on marathon performance
 
-Lastly, we hope to identify the weather parameters that have the largest impact on marathon performance. To begin, let us visualize the relationship between completion time and the weather variables with a scatterplot matrix and a line of best fit.  
+Lastly, we hope to identify the weather parameters that have the largest impact on marathon performance. To begin, let us visualize the relationship between completion time and the weather variables with a scatterplot matrix and a polynomial line of best fit.  
 
 ```{r, fig.width=8, fig.height=6}
 # Create a list to store plots
@@ -415,19 +420,56 @@ do.call(grid.arrange, c(plot_list, ncol = 3))
 
 The scatterplots reveal no significant relationships. A lot of the scatterplots show a flat line of best fit and bunching of x-values around discrete values like 0, suggesting that the weather variables do not have a strong impact on completion time. 
 
-To definitively measure which weather parameters have the largest impact on marathon performance, we will conduct a regression analysis. We will regress completion time on a subset of weather variables and examine the coefficients. The previous correlation analysis will guide our selection of weather variables. 
+To definitively measure which weather parameters have the largest impact on marathon performance, we will conduct a regression analysis. We will regress completion time on a subset of weather variables and examine the coefficients. In order to select variables meaningfully, we have to take correlations into account. High correlations between explanatory variables can lead to multicollinearity, which can cause estimation issues. That is why we will first examine the correlation matrix of the weather variables.
+
+```{r, fig.width=6, fig.height=4, fig.align="center"}
+# Calculate the correlation matrix
+cor_matrix <- cor(main_dta[weather_vars], use = "complete.obs")
+
+# Create a correlation matrix plot
+corrplot(cor_matrix, 
+         method = "circle", # or "number", "shade", etc.
+         type = "upper", # only show upper triangle
+         tl.col = "black", # text color
+         tl.srt = 45, # text rotation
+         addCoef.col = "black", # add correlation coefficients
+         diag = FALSE) # hide the diagonal
+```
+
+We can immediately see that there are strong correlation within the weather variables. For example, `wbgt` (wet bulb globe temperature) is highly correlated with `tw_c` (temperature in Celsius) and `dp` (dew point). Of course, some of these strong correlations are to be expected, as WGBT is derived from temperature. Finally, we will regress completion time on a subset of weather variables and examine the coefficients. The previous correlation analysis will guide our selection of weather variables. One group of variables, i.e. dew point, black globe temperature, wet bulb temperature, and wet bulb globe temperature, are particularly correlated. Thus, we will only include wet bulb globe temperature in the regression analysis, since it contains information from the other variables. 
 
 ```{r}
 # Fit a regression model
 lm_weather <- 
-  lm(completion_time ~ tw_c + perc_rh + tg_c + sr_wm2 + dp + wind + wbgt + aqi_median, 
+  lm(completion_time ~ perc_rh + sr_wm2 + wind + wbgt + aqi_median, 
   data = main_dta)
 
-# Use modelsummary to display the model
-modelsummary::modelsummary(lm_weather)
-summary(lm_weather)
+# Extract the relevant statistics from the lm_weather model
+lm_weather_tidy <- tidy(lm_weather)
+
+# Create a kable table with coefficient, p-value, and standard error
+lm_weather_tidy %>%
+  select(term, estimate, std.error, p.value) %>%
+  kbl(col.names = c("Term", "Coefficient", "Standard Error", "P-Value"), 
+      caption = "Summary of the Weather Model") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  add_header_above(c(" " = 1, "Model Output" = 3)) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 ```
 
+There are some issues of statistical significance, i.e. `wind` and `aqi_median` are not statistically significant at the 10% level. This suggests that there is no meaningful associations between those variables and performance time. The other variables are statistically significant even at the 1% level. This suggests that there is strong evidence that `perc_rh`, `sr_wm2`, and `wbgt` are strongly predictive of completion time. The coefficients on `perc_rh` and `sr_wm2` are negative, suggesting that higher humidity and solar radiation are associated with longer completion times. It is suprising that the coefficient on `wbgt` is positive, suggesting that higher wet bulb globe temperatures are associated with longer completion times. This serves as an important reminder that these relationships may not be evaluated as causal effects, but rather as associations. Future work could explore the positive relationship between wet bulb globe temperature and completion time further and potentially make causal conclusions. 
+
+It is difficult to definitively say which factors are "most" significant on grounds of issues regarding statistical estimation and comparing across different units but we can say that solar radiation, relative humidity, and wet bulb globe temperature are the most significant predictors of completion time.
+
+# References
+
+- Ely, B. R., Cheuvront, S. N., Kenefick, R. W., & Sawka, M. N. (2010). Aerobic performance is degraded, despite modest hyperthermia, in hot environments. Med Sci Sports Exerc, 42(1), 135-41.
+- Ely, M. R., Cheuvront, S. N., Roberts, W. O., & Montain, S. J. (2007). Impact of weather on marathon-running performance. Medicine and science in sports and exercise, 39(3), 487-493.
+- Kenney, W. L., & Munce, T. A. (2003). Invited review: aging and human temperature regulation. Journal of applied physiology, 95(6), 2598-2603.
+- Besson, T., Macchi, R., Rossi, J., Morio, C. Y., Kunimasa, Y., Nicol, C., ... & Millet, G. Y. (2022). Sex differences in endurance running. Sports medicine, 52(6), 1235-1257.
+- Yanovich, R., Ketko, I., & Charkoudian, N. (2020). Sex differences in human thermoregulation: relevance for 2020 and beyond. Physiology, 35(3), 177-184.
+
+\newpage
 
 # **Code Appendix**
 
