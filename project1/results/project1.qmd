@@ -21,6 +21,7 @@ library(GGally)
 library(broom)
 library(corrplot)
 library(kableExtra)
+library(grid)
 library(gridExtra)
 library(ggridges)
 library(knitr)
@@ -70,10 +71,14 @@ aqi_values %<>%
 # Create a crosswalk for the marathon location
 xwalk_location <- as.data.frame(
   list(
-    project1_id = c("0", "1", "2", "3", "4"),
-    marathon_dates_id = c("Boston", "Chicago", "NYC", "Twin Cities", "Grandmas"),
-    course_record_id = c("B", "C", "NY", "TC", "D"),
-    aqi_id = c("Boston", "Chicago", "NYC", "Twin Cities", "Grandmas")
+    project1_id = 
+      c("0", "1", "2", "3", "4"),
+    marathon_dates_id = 
+      c("Boston", "Chicago", "NYC", "Twin Cities", "Grandmas"),
+    course_record_id = 
+      c("B", "C", "NY", "TC", "D"),
+    aqi_id = 
+      c("Boston", "Chicago", "NYC", "Twin Cities", "Grandmas")
   )
 )
 
@@ -112,7 +117,7 @@ aqi_trim <- aqi_values %>%
   select(location_year, arithmetic_mean) %>%
   group_by(location_year) %>%
   summarize(
-    aqi_median = median(arithmetic_mean, na.rm = TRUE)
+    aqi_md = median(arithmetic_mean, na.rm = TRUE)
   )
 
 # Merge data datasets with project1_dta
@@ -139,7 +144,7 @@ table_summary <- tibble(
   "Variable Name" = colnames(main_dta),
   "Variable Type" = sapply(main_dta, class), 
   "Description" = c(
-    "Sex of the runner (0 = Female, 1 = Female)", #1
+    "Sex of the runner (0 = Female, 1 = Male)", #1
     "Flag: Based on WGBT and risk of heat illness", #2
     "Age in years", #3
     "Percentage off course record", #4
@@ -171,25 +176,25 @@ vis_miss(main_dta, sort_miss = TRUE, warn_large_data = FALSE) +
   labs(
     title = "Analyzing the Structure of Missingness",
     x = NULL,  # Use NULL instead of "" for x-axis label
-    y = "Rows"
+    y = "Rows [Dark lines represent missingness]"
   ) + 
-  theme_minimal(base_size = 14) +  # Use a minimal theme with larger base font size
+  theme_minimal(base_size = 14) + 
   theme(
-    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),  # Center title and bold
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),  # Adjust x-axis text
-    axis.title.y = element_text(size = 14),  # Increase y-axis title size
-    panel.grid.major = element_line(color = "lightgray"),  # Light gray gridlines
-    panel.grid.minor = element_blank()  # Remove minor gridlines
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),  
+    axis.title.y = element_text(size = 14), 
+    panel.grid.major = element_line(color = "lightgray"), 
+    panel.grid.minor = element_blank()  
   ) + 
-  scale_fill_brewer(palette = "Set4") +  # Change fill colors to a color palette
-  guides(fill = "none")  # Remove the legend
+  scale_fill_brewer(palette = "Set4") +  
+  guides(fill = "none")  
 
 ```
 
 There is a striking pattern of missingness in the data. The data show a row-specific pattern of missingness that re-occurs regularly. Interestingly, if a variable has missing values, it has exactly 491 missing values (~ 4%). This suggests that the missingness is not random, but rather systematic. 
 
 ```{r, fig.width=6, fig.height=4}
-# Create a matrix count of missing values by year and location across all columns
+# Create a matrix count of missing values by year and location
 missing_count_matrix <- main_dta %>%
   group_by(year, location) %>%
   summarize(
@@ -200,7 +205,8 @@ missing_count_matrix <- main_dta %>%
               values_fill = 0) 
 
 # View the resulting matrix
-knitr::kable(missing_count_matrix, caption = "Count of Missingness by Year and Location")
+knitr::kable(missing_count_matrix, 
+  caption = "Count of Missingness by Year and Location")
 
 ```
 A glance at missingness by year and location reveals that missingness mostly stems from the year 2011 with another chunk of missingness the 2012 "Grandmas" Duluth marathon. The Boston marathon is the only race unaffected by this missingness.  
@@ -220,15 +226,19 @@ main_dta %>%
   ggplot(aes(x = age_yr, y = completion_time, color = as.factor(sex))) +
   geom_point(alpha = 0.7) +
   labs(title = "Scatterplot of Age and Completion Time",
-       x = "Age (years)",
-       y = "Completion Time (seconds)") +
+       x = "Age [years]",
+       y = "Completion Time [seconds]") +
   theme(
-    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),  # Center title and bold
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),  # Adjust x-axis text
-    axis.title.y = element_text(),  # Increase y-axis title size
-    panel.grid.major = element_line(color = "lightgray"),  # Light gray gridlines
-    panel.grid.minor = element_blank()  # Remove minor gridlines
-  )
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
+    axis.title.y = element_text(), 
+    panel.grid.major = element_line(color = "lightgray"), 
+    panel.grid.minor = element_blank() 
+  ) +
+  scale_color_manual(values = c("purple", "orange")) + 
+  guides(color = "none") +  # Remove legend
+  annotate("text", x = 60, y = 1750000, label = "Female", color = "purple") +
+  annotate("text", x = 82, y = 500000, label = "Male", color = "orange") 
 
 ```
 
@@ -263,19 +273,23 @@ pred_df <- main_dta %>%
 # Create the scatterplot with all model predictions overlaid
 pred_df %>%
   ggplot(aes(x = age_yr, y = completion_time)) +
-  geom_point(alpha = 0.5) +  # Add points for the actual data
-  geom_line(aes(y = pred_simple), color = "blue", linetype = "solid", size = 1) +  # Linear model
-  geom_line(aes(y = pred_sq), color = "red", linetype = "solid", size = 1) +  # Quadratic model
+  geom_point(alpha = 0.5, color = "grey") +  
+  geom_line(aes(y = pred_simple), color = "orange", 
+                linetype = "solid", size = 1) +  # Linear model
+  geom_line(aes(y = pred_sq), color = "purple", 
+                linetype = "solid", size = 1) +  # Quadratic model
   labs(title = "Scatterplot of Age and Completion Time with Model Fits",
-       x = "Age (years)",
-       y = "Completion Time (seconds)") +
+       x = "Age [years]",
+       y = "Completion Time [seconds]") +
   scale_color_manual(name = "Model Type",
                      values = c("Linear" = "blue", "Quadratic" = "red")) +
   theme(
-    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),  # Center title and bold
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),  # Adjust x-axis text
+    plot.title = element_text(hjust = 0.5, 
+                  size = 14, face = "bold"),  # Center title and bold
+    axis.text.x = element_text(angle = 90, 
+                  hjust = 1, vjust = 0.5),  # Adjust x-axis text
     axis.title.y = element_text(),  
-    panel.grid.major = element_line(color = "lightgray"),  # Light gray gridlines
+    panel.grid.major = element_line(color = "lightgray"), 
     panel.grid.minor = element_blank()  # Remove minor gridlines
   ) + 
   theme(legend.position = "right")
@@ -290,8 +304,7 @@ modelsummary::modelsummary(
   list(
     "Linear Model (Simple)" = lm_age_simple,
     "Linear Model (Quadratic)" = lm_age_sq
-  ),
-  title = "Comparison of Simple and Quadratic Linear Models for Age and Completion Time",
+  )
 )
 
 ```
@@ -303,54 +316,48 @@ Next, we are interested in the impact of environmental conditions on marathon pe
 
 ```{r}
 # Create a correlation matrix of weather measures
-weather_vars <- c("tw_c", "perc_rh", "tg_c", "sr_wm2", "dp", "wind", "wbgt", "aqi_median")
+weather_vars <- 
+  c("tw_c", "perc_rh", "tg_c", "sr_wm2", "dp", "wind", "wbgt", "aqi_md")
 
-# Create summary function for grouped data
-summarize_weather_by_location <- function(df, var) {
-  df %>%
-    group_by(location) %>%
-    summarize(
-      n = sum(!is.na(.data[[var]])),
-      mean = round(mean(.data[[var]], na.rm = TRUE), 0),
-      sd = round(sd(.data[[var]], na.rm = TRUE), 0),
-      min = round(min(.data[[var]], na.rm = TRUE), 0),
-      max = round(max(.data[[var]], na.rm = TRUE), 0),
-      range = round(max(.data[[var]], na.rm = TRUE) - min(.data[[var]], na.rm = TRUE), 0)
-    ) %>%
-    mutate(variable = var)
+locations <- unique(main_dta$location)
+
+# Create a summary function that formats mean and sd
+summary_fn <- function(data, var) {
+  mean_val <- mean(data[[var]], na.rm = TRUE)
+  sd_val <- sd(data[[var]], na.rm = TRUE)
+  return(sprintf("%.1f (%.1f)", mean_val, sd_val))  # Rounded to 1 digit
 }
 
-# Apply function to all weather variables and bind the results
-summary_by_location <- bind_rows(lapply(weather_vars, function(var) {
-  summarize_weather_by_location(main_dta, var)
-}))
+# Generate the summary table
+summary_table <- sapply(locations, function(loc) {
+  sapply(weather_vars, function(var) {
+    summary_fn(main_dta %>% filter(location == loc), var)
+  })
+})
 
-# Rearrange columns and arrange by location
-summary_by_location <- summary_by_location %>%
-  select(location, variable, n, mean, sd, min, max, range) %>%
-  arrange(location)
+# Convert to a data frame and set row names
+summary_df <- as.data.frame(summary_table, row.names = weather_vars)
 
-# Create kable table with alternating row colors
-#knitr::kable(summary_by_location, 
-#      booktabs = TRUE,
-#      caption = "Summary of Weather Variables by Location") 
+# Create a kable table
+kable(summary_df, caption = "Weather Variables Summary by Location") %>%
+  kable_styling(full_width = F)
 
 ```
 
-Exploratory analysis shows that the "Grandmas" Duluth marathon has a slightly higher temperature mean than the other marathons. The "Grandmas" Duluth marathon also has the highest solar radiation and dew point mean. With the "Grandmas" Duluth marathon being the warmest, it would be interesting to see whether completion times are uniformly higher. To visually examine this hypothesis, we will create a ridge plot of completion times by location.
+The exploratory analysis shows that the "Grandmas" Duluth marathon has a slightly higher temperature mean than the other marathons. The "Grandmas" Duluth marathon also has the highest solar radiation and dew point mean. With the "Grandmas" Duluth marathon being the warmest, it would be interesting to see whether completion times are uniformly higher. To visually examine this hypothesis, we will create a ridge plot of completion times by location.
 
 
 ```{r, fig.width=8, fig.height=6}
 # Ridge plot
 ggplot(main_dta, aes(x = completion_time, y = location, fill = location)) +
-  geom_density_ridges(alpha = 0.7, size = 0.8, scale = 1.2) +  # Ridge plot with densities
+  geom_density_ridges(alpha = 0.7, size = 0.8, scale = 1.2) + 
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),  # Center title and bold
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),  # Adjust x-axis text
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),  
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),  
     axis.title.y = element_text(),  
-    panel.grid.major = element_line(color = "lightgray"),  # Light gray gridlines
-    panel.grid.minor = element_blank()  # Remove minor gridlines
+    panel.grid.major = element_line(color = "lightgray"),  
+    panel.grid.minor = element_blank() 
   ) + 
   labs(title = "Completion Times by Location",
        x = "Completion Time [seconds]",
@@ -361,31 +368,36 @@ Interestingly, the ridge plot shows that there are no significant differences in
 
 Although there is little evidence that completion times are affected uniformly by temperature variables, we can see slight bimodal trends in the ridge plot in the "Grandmas" Duluth marathon. Potentially, this could be evidence for weather affecting runners differently by performance group. To test whether the relationship between weather and performance varies by performance group, we classify runners into performance quartiles and examine the relationship between completion time and `flag`. The `flag` variable is based on the Wet Bulb Globe Temperature (WBGT) and the risk of heat illness.
 
-```{r, fig.width=10, fig.height=8, fig.align="center"}
+```{r, fig.width=8, fig.height=6, fig.align="center"}
 # Create performance quartiles
 main_dta %<>%
   mutate(completion_time_q = ntile(completion_time, 4))
 
 main_dta$completion_time_q <- as.factor(main_dta$completion_time_q)
 
-# Create a boxplot of completion time by flag and performance quartile
+# Box plot
 main_dta %>%
   ggplot(aes(x = flag, y = completion_time, fill = completion_time_q)) +
   geom_boxplot() +
   labs(title = "Boxplot of Completion Time by Flag and Performance Quartile",
        x = "Flag",
        y = "Completion Time [seconds]",
-  fill = "Performance Quartile \n(1) Top 25% \n(2) Top 25-50% \n(3) Top 50-75% \n(4) Bottom 25%") +
+  fill = "Performance Quartile
+  \n(1) Top 25% (2) Top 25-50% \n(3) Top 50-75% (4) Bottom 25%") +
   theme(
-    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),  # Center title and bold
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),  # Adjust x-axis text
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"), 
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5), 
     axis.title.y = element_text(),  
-    panel.grid.major = element_line(color = "lightgray"),  # Light gray gridlines
-    panel.grid.minor = element_blank()  # Remove minor gridlines
-  ) + 
-  theme(legend.position = "right")
+    panel.grid.major = element_line(color = "lightgray"), 
+    panel.grid.minor = element_blank(), 
+    legend.position = "bottom", 
+    legend.box = "vertical", 
+    legend.background = element_rect(fill = "white", color = "black"), 
+    legend.key = element_rect(fill = "white") 
+  )
 
 ```
+
 Despite accounting for the performance quartiles, there is little to no noticeable impact of the flag category on completion time. This suggests that less strong runners are in fact not more susceptible to the variations in weather conditions. 
 
 # Aim 3: Identify the weather parameters that have the largest impact on marathon performance
@@ -401,21 +413,26 @@ for (var in weather_vars) {
   p <- ggplot(main_dta, aes_string(x = var, y = "completion_time")) +
     geom_point(alpha = 0.1) +
     # Add regression lines for each flag-specific model
-    geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
-    labs(x = var, y = "Completion Time") +
+    geom_smooth(method = "lm", formula = y ~ poly(x, 2), 
+    se = FALSE, color = "purple") +
+    labs(x = var, y = "Completion Time [s]") +
     theme(
-    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),  # Center title and bold
-    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),  # Adjust x-axis text
-    axis.title.y = element_text(),  
-    panel.grid.major = element_line(color = "lightgray"),  # Light gray gridlines
-    panel.grid.minor = element_blank()  # Remove minor gridlines
-    ) 
+      plot.title = element_text(hjust = 0.5, 
+      size = 14, face = "bold"),  # Center title and bold
+      axis.text.x = element_text(angle = 90, 
+      hjust = 1, vjust = 0.5),  # Adjust x-axis text
+      axis.title.y = element_text(),  
+      panel.grid.major = element_line(color = "lightgray"),  
+      panel.grid.minor = element_blank() 
+  ) 
 
   plot_list[[var]] <- p
 }
 
-# Arrange the plots in a 3x3 grid
-do.call(grid.arrange, c(plot_list, ncol = 3))
+# Arrange the plots in a 3x3 grid with a global title
+grid.arrange(grobs = plot_list, ncol = 3, 
+  top = grid::textGrob("Weather Variables by Completion Time \n", 
+                            gp = gpar(fontsize = 14, fontface = "bold")))
 ```
 
 The scatterplots reveal no significant relationships. A lot of the scatterplots show a flat line of best fit and bunching of x-values around discrete values like 0, suggesting that the weather variables do not have a strong impact on completion time. 
@@ -428,12 +445,16 @@ cor_matrix <- cor(main_dta[weather_vars], use = "complete.obs")
 
 # Create a correlation matrix plot
 corrplot(cor_matrix, 
-         method = "circle", # or "number", "shade", etc.
+         method = "shade", # or "number", "shade", etc.
          type = "upper", # only show upper triangle
+         mar=c(0,0,2,0),
          tl.col = "black", # text color
          tl.srt = 45, # text rotation
          addCoef.col = "black", # add correlation coefficients
-         diag = FALSE) # hide the diagonal
+         diag = FALSE, # hide the diagonal
+         title = "Correlation Matrix between Numerical Weather Variables",
+         cex.main = 0.8) 
+
 ```
 
 We can immediately see that there are strong correlation within the weather variables. For example, `wbgt` (wet bulb globe temperature) is highly correlated with `tw_c` (temperature in Celsius) and `dp` (dew point). Of course, some of these strong correlations are to be expected, as WGBT is derived from temperature. Finally, we will regress completion time on a subset of weather variables and examine the coefficients. The previous correlation analysis will guide our selection of weather variables. One group of variables, i.e. dew point, black globe temperature, wet bulb temperature, and wet bulb globe temperature, are particularly correlated. Thus, we will only include wet bulb globe temperature in the regression analysis, since it contains information from the other variables. 
@@ -441,7 +462,7 @@ We can immediately see that there are strong correlation within the weather vari
 ```{r}
 # Fit a regression model
 lm_weather <- 
-  lm(completion_time ~ perc_rh + sr_wm2 + wind + wbgt + aqi_median, 
+  lm(completion_time ~ perc_rh + sr_wm2 + wind + wbgt + aqi_md, 
   data = main_dta)
 
 # Extract the relevant statistics from the lm_weather model
@@ -455,9 +476,10 @@ lm_weather_tidy %>%
   kable_classic(full_width = F, html_font = "Cambria") %>%
   add_header_above(c(" " = 1, "Model Output" = 3)) %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
 ```
 
-There are some issues of statistical significance, i.e. `wind` and `aqi_median` are not statistically significant at the 10% level. This suggests that there is no meaningful associations between those variables and performance time. The other variables are statistically significant even at the 1% level. This suggests that there is strong evidence that `perc_rh`, `sr_wm2`, and `wbgt` are strongly predictive of completion time. The coefficients on `perc_rh` and `sr_wm2` are negative, suggesting that higher humidity and solar radiation are associated with longer completion times. It is suprising that the coefficient on `wbgt` is positive, suggesting that higher wet bulb globe temperatures are associated with longer completion times. This serves as an important reminder that these relationships may not be evaluated as causal effects, but rather as associations. Future work could explore the positive relationship between wet bulb globe temperature and completion time further and potentially make causal conclusions. 
+There are some issues of statistical significance, i.e. `wind` and `aqi_md` are not statistically significant at the 10% level. This suggests that there is no meaningful associations between those variables and performance time. The other variables are statistically significant even at the 1% level. This suggests that there is strong evidence that `perc_rh`, `sr_wm2`, and `wbgt` are strongly predictive of completion time. The coefficients on `perc_rh` and `sr_wm2` are negative, suggesting that higher humidity and solar radiation are associated with longer completion times. It is suprising that the coefficient on `wbgt` is positive, suggesting that higher wet bulb globe temperatures are associated with longer completion times. This serves as an important reminder that these relationships may not be evaluated as causal effects, but rather as associations. Future work could explore the positive relationship between wet bulb globe temperature and completion time further and potentially make causal conclusions. 
 
 It is difficult to definitively say which factors are "most" significant on grounds of issues regarding statistical estimation and comparing across different units but we can say that solar radiation, relative humidity, and wet bulb globe temperature are the most significant predictors of completion time.
 
