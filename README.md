@@ -4,7 +4,8 @@ This is a README file for the projects completed in the course "Practical Data A
 
 ## Project Description
 
-- Project 1: Exploratory Data Analysis
+- Project 1: Exploratory Data Analysis on Marathon Data
+- Project 2: Regression Analysis with Smoking Cessation Data
 
 ## Folder structure
 
