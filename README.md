@@ -6,6 +6,7 @@ This is a README file for the projects completed in the course "Practical Data A
 
 - Project 1: Exploratory Data Analysis on Marathon Data
 - Project 2: Regression Analysis with Smoking Cessation Data
+- Project 3: Simulation Study on Optimal Designs in Cluster Randomized Trials
 
 ## Folder structure
 

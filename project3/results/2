@@ -1,0 +1,170 @@
+---
+title: Understanding Optimal Study Design in Causal Inference through Simulation Studies
+author: Daniel Posmik
+date: 2024-12-01
+format: pdf 
+toc: true
+number_sections: true
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+# Set up knit environment
+knitr::opts_chunk$set(echo = F)
+knitr::opts_chunk$set(error = F)
+knitr::opts_chunk$set(warning = F)
+knitr::opts_chunk$set(message = F)
+
+# Libraries
+library(knitr)
+library(kableExtra)
+library(tidyverse)
+```
+
+# Abstract 
+
+**Finish this at the end**
+Your simulation study should address the following aims:
+
+AIM 1: Design a simulation study using the ADEMP framework from class to evaluate potential study designs.
+AIM 2: Explore relationships between the underlying data generation mechanism parameters and the relative costs c1/c2 and how these impact the optimal study design.
+AIM 3: Extend your simulation study to the setting in which Y follows a Poisson distribution with mean mu_i and explore how this impacts the results. The hierarchical model for this setting is given below.
+
+# Aim 1: Designing a Simulation Study 
+
+We shall begin our analysis with the discussion of the underlying data generating mechanisms (DGM) and the relationships across them. A solid understanding of these DGMs--and its communication to the reader--is good starting point for the design and implementation of simulation studies. In our context, there are various levers that determine our appraoch to the simulation study. The below figure illustrates the structure of our data and estimands:
+
+![[Data Generating Mechanisms and Data Structure](https://q.uiver.app/#q=WzAsNyxbMCwyLCJcXHRleHRiZntXaXRoaW4gQ2x1c3RlciBNZWFufSBcXFxcIFxcbXVfe2kwfSA9IFxcYWxwaGEgKyBcXGJldGEgWF9pIFxcdGV4dGl0eyB3aGVyZX1cXFxcIFxcbXVfe2kwfSBcXHNpbSBcXG1hdGhjYWx7Tn0oXFxhbHBoYSArIFxcYmV0YSBwLCBcXGJldGFeMlxcY2RvdCBwKDEtcCkpIl0sWzIsMiwiXFx0ZXh0YmZ7Q29uZGl0aW9uYWwgTWVhbn0gXFxcXCBcXG11X3tpfXxcXGVwc2lsb25faSA9IFxcbXVfe2l9ICsgXFxlcHNpbG9uX2kgXFx0ZXh0aXR7IHdoZXJlfSBcXFxcIFxcbXVfe2l9fFxcZXBzaWxvbl9pIFxcc2ltIFxcbWF0aGNhbHtOfShcXG11X3tpMH0sIFxcZ2FtbWFeMikiXSxbNCwyLCJcXHRleHRiZntDb25kaXRpb25hbCBPdXRjb21lfSBcXFxcIFlfe2lqfXxcXG11X2kgPSBcXG11X2kgKyBcXGVwc2lsb25fe2lqfSBcXHRleHRpdHsgd2hlcmV9IFxcXFwgWV97aWp9fFxcbXVfaSBcXHNpbSBcXG1hdGhjYWx7Tn0oXFxtdV9pLCBcXHNpZ21hXjIpIl0sWzAsNCwiXFx0ZXh0YmZ7VHJlYXRtZW50IEluZGljYXRvcn0gXFxcXCBYX2kgXFxzaW0gXFx0ZXh0e0Jlcm5vdWxsaX0ocCkiLFswLDYwLDYwLDFdXSxbMiwwLCJcXHRleHRiZntXaXRoaW4tQ2x1c3RlciBOb2lzZX0gXFxcXCBcXGVwc2lsb25faSBcXHNpbSBcXG1hdGhjYWx7Tn0oMCxcXGdhbW1hXjIpIixbMCw2MCw2MCwxXV0sWzYsMiwiXFx0ZXh0YmZ7RXhwLiBDb25kaXRpb25hbCBPdXRjb21lfSBcXFxcIFxcbWF0aGJie0V9W1lfe2lqfXxYX2ksIFxcZXBzaWxvbl9pXSA9IFxcYWxwaGEgKyBcXGJldGEgWF9pICsgXFxlcHNpbG9uX2kgXFx0ZXh0aXR7IHdoZXJlfSBcXFxcIFlfe2lqfXxYX2ksIFxcZXBzaWxvbl9pIFxcc2ltIFxcbWF0aGNhbHtOfShcXGFscGhhICsgXFxiZXRhIFhfaSArIFxcZXBzaWxvbl9pLCBcXHNpZ21hXjIpIl0sWzMsNCwiXFx0ZXh0YmZ7QWNyb3NzLUNsdXN0ZXIgTm9pc2V9IFxcXFwgXFxlcHNpbG9uX3tpan0gXFxzaW0gXFxtYXRoY2Fse059KDAsXFxzaWdtYV4yKSIsWzAsNjAsNjAsMV1dLFszLDAsIiIsMCx7ImNvbG91ciI6WzAsNjAsNjBdfV0sWzAsMV0sWzQsMSwiIiwyLHsiY29sb3VyIjpbMCw2MCw2MF19XSxbMSwyLCJcXHRleHR7T3ZlciBjbHVzdGVyc30gXFxcXCBqID0gMSwgXFxjZG90cywgUiIsMCx7InNob3J0ZW4iOnsic291cmNlIjoxMCwidGFyZ2V0IjoxMH0sImxldmVsIjoyfV0sWzYsMiwiXFxzaWdtYV4yIFxcdGV4dHsgY29tYmluZXN9IFxcXFwgXFx0ZXh0e2JvdGggc291cmNlcyBvZiBlcnJvcn0iLDMseyJjb2xvdXIiOlswLDYwLDYwXX0sWzAsNjAsNjAsMV1dLFsyLDVdXQ==)](/Users/posmikdc/Documents/brown/classes/php2550-pda/php2550-projects/project3/img/data-generating-mechanisms.png)
+
+Here, the sources of variability are colored in light red. Specifically, we see that the data generation of the binary treatment indicator must be determined by a parameter $p$. Moreover, the mechanism and analysis of noise across individuals and clusters requires a sound parametrization. 
+
+In our simulation study, a key assumption--that is often implicit--is the specification of our nuisance parameters $\epsilon$ as 0 in expectation. Moreover, we specify the variance for our noise terms to be $\gamma^2$ and $\sigma^2$ for within-cluster and across-cluster noise, respectively. Note that we let our across-cluster noise "consume" our within-cluster noise, i.e. $\gamma^2 \leq \sigma^2$. Hence, although we certainly have $Y_{ij} \sim \mathcal{N}(\alpha + \beta X_i, \gamma^2 + \sigma^2)$, by conditioning on $\epsilon_i$, we obtain $Y_{ij}|\epsilon_i \sim \mathcal{N}(\alpha + \beta X_i, \sigma^2)$. Our inference will happen on the parameter $\beta$, as seen in the final step, the expected conditional outcome $Y_{ij}|X_i, \epsilon_i$.
+
+The results of Morris et al. (2019) set forth a detailed and comprehensive guide for the design of simulation studies that are robust, transparent, and reproducible. Using their findings, we are now ready to outline our simulation study design using the ADEMP fand (2) to analyze the parameters $n_{ij}$, with respect to clusters $j$ and individuals $i$, that optimize information obtained in clustered, budget-constrained sampling settings. Although the latter certainly depends on the former, we will present the following ADEMP table with a column for each simulation objective. 
+
+```{r}
+# Create the ADEMP data frame
+ademp_df <- data.frame(
+  Objectives = c(
+    "(A) Aims",
+    "(D) Data-Generating Mechanisms",
+    "(E) Estimand/Target of Analysis",
+    "(M) Methods",
+    "(P) Performance Measures"
+  ),
+  `Causal Parameter` = c(
+    "Our goal is to analyze the performance of the estimator \\(\\hat{\\beta}\\) for our causal estimand \\(\\beta\\).",
+    "For the treatment assignment mechanism, we will sample from a Bernoulli(\\(p\\)) distribution with parameter \\(p\\). The random noise terms will be sampled from a normal distribution with expectation 0 and variance \\(\\gamma^2\\) (within-cluster variance) and \\(\\sigma^2\\) (across-cluster variance). The parameters \\(p, \\gamma^2, \\sigma^2\\) will be varied.",
+    "Our estimand will be the average treatment effect (ATE) which is denoted as \\(\\beta\\).",
+    "We will be using an ordinary least squares (OLS) linear regression estimator to measure the means and outcomes. In the last aim, we will also consider the case when the outcome follows a Poisson distribution and make use of Poisson regression.",
+    "Our specific measures for \\(\\beta\\) will be bias, empirical standard error (empSE), and mean squared error (MSE)."
+  ),
+  `Sampling Parameters` = c(
+    "Our goal is to develop an optimal sampling design with respect to the number of samples from individuals in clusters \\(n_i \\mid J = j\\), the cost of sampling \\(c_i \\mid J = j\\), and the budget constraint \\(B = b\\).",
+    "We will vary the cost parameters \\(c_i\\) and \\(c_j\\), the number of individuals \\(n_i\\) and clusters \\(n_j\\), and the budget \\(B\\) to determine the optimal sampling strategy.",
+    "Optimal \\(n_{ij}\\) such that power is maximized.",
+    "We will determine optimal samples by maximizing statistical power.",
+    "To analyze optimal sampling in the clustered, budget-constrained setting, we will analyze statistical power."
+  )
+)
+
+# Generate the table
+t.ademp <- ademp_df %>%
+  kbl(
+    escape = FALSE, 
+    col.names = c("Objectives", "Causal Parameter", "Sampling Parameters"), 
+    caption = "ADEMP Summary of Simulation Study Design"
+  ) %>%
+  kable_styling(full_width = TRUE) %>%
+  row_spec(0, bold = TRUE)
+
+t.ademp
+
+```
+
+Now, we are ready to turn to the design of our simulation study. Firstly, we we need to determine our sampling strategy. In other words, how many units do we sample from each cluster and how many clusters do we sample from? 
+
+To solve this question, we will rely on a literature survey (Rutterford et al., 2015) in the field of clustered randomized trials (CRTs).
+
+Assume we have the following parameters: 
+
+- $n$: Number of individuals in a cluster (assumed to be constant across all clusters, i.e. $n_{j} = n$)
+- $J$: Number of clusters
+- $c_1$: Cost of sampling the first individual in a cluster (assumed to be constant across all clusters, i.e. $c_{1j} = c_1$)
+- $c_i$: Cost of sampling the $i$-th individual (with $i = 2, \cdots, n)$ in a cluster (again, $c_{ij} = c_i$)
+- $T$: Budget
+
+Then, we know that the cost to sample from one cluster is given by 
+
+$$
+T = c_1 + c_2 \cdot (n - 1) \quad \text{for } i = 2, \cdots, n; \text{ with total cost } TC = J \cdot T
+$$
+
+Given our budget $T$, we can now determine the optimal number of clusters and the optimal number of individuals to sample from. Rutterford et al. (2015) and suggest two formulae to calculate both with the objective of minimizing the variance of the treatment effect estimator (developed by Raudenbush (1997)). We replicate these formulas, but substituting in our cost function, to obtain: 
+
+$$
+J^* = \lfloor \frac{T}{(\gamma/\sigma) \sqrt{c_1 c_2} + c_1} \rfloor; \quad n^* = \lfloor \frac{\gamma}{\sigma} \sqrt{\frac{c_1}{c_2}} \rfloor 
+$$
+
+where the $\lfloor \cdot \rfloor$ operator denotes the floor function, i.e. we must round down to the nearest integer. $\gamma$ and $\sigma$ denote the withon-cluster and across-cluster standard deviations, respectively. $J^*$ and $n^*$ are the optimal number of clusters and the optimal number of individuals to sample from, respectively. The equation for $n^*$ tells us that larger $n$ is best when the variability within a cluster is larger and when the cost of sampling additional individuals within a chosen cluster is larger, as compared with the cost of sampling more clusters. 
+
+We can now turn to the simulation of our study design. Following the example of Raudenbush (1997), we will calculate treatment effect variances and optimal sample sizes for a selection as a function of the variance terms, and cost. To simplify our analysis, let $\rho = \gamma/\sigma$ be a composite measure of the variances. 
+
+```{r}
+sample_strategy <- function(rho, c1, c2, T){
+    # Calculate optimal number of samples in a given cluster 
+    nOpt <- rho*sqrt(c1/c2)  
+    nOpt <- floor(nOpt)
+   
+    # Calculate optimal number of clusters
+    JOpt <- T/(rho * sqrt(c2*c1) + c1) 
+    JOpt <- floor(JOpt)
+
+    # Return the results
+    df <- data.frame(rho = rho, c2 = c2, nOpt = nOpt, JOpt = JOpt)
+    return(df)
+}
+
+# Simulate the results
+rho <- c(0.01, 0.05, 0.1, 0.2, 0.5)
+c1 <- 80 # Cost of sampling the first individual in a cluster
+c2 <- c(2, 10, 50) # Cost of sampling the i-th individual in a cluster
+T <- 400 # Budget
+
+# Initialize an empty data frame to store results
+df <- data.frame(rho = numeric(0), 
+                 c2 = numeric(0), 
+                 nOpt = numeric(0), 
+                 JOpt = numeric(0))
+
+for (r in rho){
+  for (c in c2){
+    # Calculate results for each iteration
+    results <- sample_strategy(rho = r, c1 = c1, c2 = c2, T = T)
+  }
+  # Bind results to a data frame
+  df <- rbind(df, results)
+}
+
+print(df)
+```
+
+
+
+
+\newpage
+# References
+
+- Morris TP, White IR, Crowther MJ. Using simulation studies to evaluate statistical methods. Statistics in Medicine. 2019; 38: 2074–2102. https://doi.org/10.1002/sim.8086
+- Raudenbush, S. W. (1997). Statistical analysis and optimal design for cluster randomized trials. Psychological Methods, 2(2), 173–185. https://doi.org/10.1037/1082-989X.2.2.173
+- Rutterford, C., Copas, A., & Eldridge, S. (2015). Methods for sample size determination in cluster randomized trials. International journal of epidemiology, 44(3), 1051–1067. https://doi.org/10.1093/ije/dyv113
+
+\newpage 
+# **Code Appendix**
+
+```{r, ref.label = knitr::all_labels()}
+#| echo: true
+#| eval: false
+```
+
