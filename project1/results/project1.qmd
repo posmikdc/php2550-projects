@@ -31,15 +31,10 @@ library(gtsummary)
 
 ```
 
-# Overview
+# Introduction
 
-This project is a result of a collaboration with Dr. Brett Romano Ely and Dr. Matthew Ely from the Department of Health Sciences at Providence College. Endurance exercise performance is degraded with increasing environmental temperature, and the decline in performance associated with warmer temperatures is magnified with longer-distance events such as the marathon footrace (42.2k). In addition, older adults experience thermoregulatory challenges that impair their ability to dissipate heat, which can further exacerbate the impact of warmer temperatures. Finally, there are well-documented sex differences in endurance performance and in physiological processes related to thermoregulation. The purpose of Dr. Ely’s research is to examine the impact of environmental conditions including temperature, humidity, solar radiation, and wind on marathon performance in men and women throughout the lifespan. This data set includes top single-age performances from five major marathons across 15-20 years from age 14-85 in men and women, with detailed environmental conditions for each marathon.
 
-During this project, the focus will be on three aims:
-
-- Aim 1: Examine effects of increasing age on marathon performance in men and women
-- Aim 2: Explore the impact of environmental conditions on marathon performance, and whether the impact differs across age and gender.
-- Aim 3: Identify the weather parameters (WBGT, Flag conditions, temperature, etc) that have the largest impact on marathon performance.
+Endurance exercise performance is degraded with increasing environmental temperature, and the decline in performance associated with warmer temperatures is magnified with longer-distance events such a the marathon footrace (42.2k). In addition, older adults experience thermoregulatory challenges that impair their ability to dissipate heat, which can further exacerbate the impact of warmer temperatures. Finally, there are well-documented sex differences in endurance performance and in physiological processes related to thermoregulation. We find that completion time varies significantly by age, following a non-linear trend. Although the performance quartiles are relatively stable across flag conditions, there is a significant correlation between the weather variables. All in all, we find that solar radiation, relative humidity, and wet bulb globe temperature are the most significant predictors of completion time.
 
 # Data Pre-Processing
 
@@ -141,7 +136,6 @@ write_csv(main_dta, paste0(output_folder, "main_dta.csv"))
 
 # Summary table
 table_summary <- tibble(
-  "Variable Name" = colnames(main_dta),
   "Variable Type" = sapply(main_dta, class), 
   "Description" = c(
     "Sex of the runner (0 = Female, 1 = Male)", #1
@@ -162,7 +156,8 @@ table_summary <- tibble(
     "Race date YYYY-MM-DD", #16
     "Race year", #17
     "Race location" #18
-  )
+  ), 
+  "R Name" = colnames(main_dta)
 )
 
 # Display the table
@@ -172,7 +167,7 @@ knitr::kable(table_summary, caption = "Variable Summary for main_dta")
 Additionally, let us conduct some preliminary data integrity checks and assess missingness. 
 
 ```{r message=FALSE, warning=FALSE, fig.width=8, fig.height=8}
-vis_miss(main_dta, sort_miss = TRUE, warn_large_data = FALSE) + 
+p.miss <- vis_miss(main_dta, sort_miss = TRUE, warn_large_data = FALSE) + 
   labs(
     title = "Analyzing the Structure of Missingness",
     x = NULL,  # Use NULL instead of "" for x-axis label
@@ -242,7 +237,9 @@ main_dta %>%
 
 ```
 
-The scatterplot shows a non-linear relationship between age and completion time. Until roughly age 25, completion time decreases. From age 25 to age 35, completion time remains low and steady. After 35, completion time increases. This is not a surprising trend, seeing that the human body peaks in performance around the mid-20s. Furthermore, the data show slight heteroskedasticity, with the variance of completion time increasing with age. The data show us that the older the runner, the more diverse the completion times. 
+The scatterplot shows a non-linear relationship between age and completion time. Specifically it is fairly linear up until an age of roughly 50, and then increases exponentially after. 
+
+Until roughly age 25, completion time decreases. From age 25 to age 35, completion time remains low and steady. After 35, completion time increases. This is not a surprising trend, seeing that the human body peaks in performance around the mid-20s. Furthermore, the data show slight heteroskedasticity, with the variance of completion time increasing with age. The data show us that the older the runner, the more diverse the completion times. 
 
 Moreover, differences between genders become visible when age increases. It seems that female completion times rise sooner and more sharply than male completion times. This may be a result of more male runners participating in marathons at older ages. All in all, the differences between genders are not as pronounced as the differences between age groups. 
 
@@ -435,7 +432,7 @@ grid.arrange(grobs = plot_list, ncol = 3,
                             gp = gpar(fontsize = 14, fontface = "bold")))
 ```
 
-The scatterplots reveal no significant relationships. A lot of the scatterplots show a flat line of best fit and bunching of x-values around discrete values like 0, suggesting that the weather variables do not have a strong impact on completion time. 
+The scatterplots reveal no significant relationships, however there seems to be a data quality issue in the percent relative humidity variable. We can see significant bunching at 0% which seems odd. One strategy would be to exclude them in analysis but we would need more contextual information on data provenance to make a more informed choice. A lot of the scatterplots show a flat line of best fit and bunching of x-values around discrete values like 0, suggesting that the weather variables do not have a strong impact on completion time. 
 
 To definitively measure which weather parameters have the largest impact on marathon performance, we will conduct a regression analysis. We will regress completion time on a subset of weather variables and examine the coefficients. In order to select variables meaningfully, we have to take correlations into account. High correlations between explanatory variables can lead to multicollinearity, which can cause estimation issues. That is why we will first examine the correlation matrix of the weather variables.
 

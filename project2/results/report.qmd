@@ -303,7 +303,7 @@ lasso_cv <-
 
 # Find optimal lambda value
 lambda.min <- lasso_cv$lambda.min 
-plot(lasso_cv)
+#plot(lasso_cv)
 
 # Print
 print(paste0("Our error-minimizing value of lambda is ", 
@@ -325,8 +325,7 @@ modelsummary::modelsummary(list("Logit Model" = logit_fit,
   gof_omit = 'IC|Log|Adj')
 
 ```
-
-We can see that our lambda is relatively small, suggesting a smaller regularization effect in the model. The LASSO model imposes fairly significant shrinkage on the coefficients. Now, no variable is significant in the LASSO model. This is not surprising given that the FTCD score was the only significant variable in the full model. 
+Here, the LASSO model serves a largely prescriptive purpose. Rather than being interested in the LASSO model itself, we seek to gather evidence on the stability of the variables chosen from the EDA step. We can see that the logit coefficients are relatively stable across the LASSO model, although the cigarette reward value and age variables were shrunk significantly. On the contrary, if we had observed significant shrinkage across categories, this could have warranted even more reduction in the set of controls. The LASSO regression here was used as a check and I have revised the report to better communicate this. In terms of diagnostics, we can see that our lambda is relatively small, suggesting a smaller regularization effect in the model. The LASSO model imposes fairly significant shrinkage on the coefficients. Now, no variable is significant in the LASSO model. This is not surprising given that the FTCD score was the only significant variable in the full model. 
 
 # Aim 2: The Black Race Indicator and Collider Bias  
 
@@ -470,6 +469,10 @@ In the other interaction groups, we observe interaction effects at a significanc
 The interaction term between the cigarette reward value and the treatment is also significant, suggesting that the effect of the treatment on smoking cessation is moderated by the perceived reward of cigarettes. Finally, the interaction term between antidepression medication and the treatment is significant, suggesting that the effect of the treatment on smoking cessation is moderated by the use of antidepression medication. 
 
 It is important to note that all significant interaction terms can be found on the varicline treatment side, suggesting that behavioral treatment is not moderated (nor significant) with respect to smoking cessation. We can conclude that the varicline treatment is the main driver of smoking cessation in our data and is moderated strongly by black race and also by age, cigarette reward value, and antidepression medication.
+
+# Limitations 
+
+This project presented many limitations that we want to acknowledge. Due to the time constraints, there are many sets and subsets of interaction terms that can be explored. With the time and space given, we believe our analysis does provide a good foundation for understanding smoking cessation predictors. However, one major limitation was the low sample size relative to the number of predictors, which necessitated a drastic reduction in variables to avoid overfitting and spurious results. While this reduction was justified qualitatively through the grouping of variables into logical clusters, it remains worrisome in terms of capturing the complexity of smoking cessation behaviors. Additionally, while LASSO regression was used as a diagnostic tool to assess variable importance and potential shrinkage, the limited shrinkage observed does not entirely mitigate concerns about the stability of variable selection given the dataset’s constraints. Finally, the inherent limitations of this dataset, compounded by the challenges of low $n$ and high $p$, underscore the need for caution when interpreting the results and highlight areas for future research with larger and more representative samples.
 
 # References
 
