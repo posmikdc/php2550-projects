@@ -1,0 +1,26 @@
+---
+title: End-of-Semester Reflection
+author: Daniel Posmik
+date: 2024-12-12
+format: pdf
+toc: false 
+number_sections: false
+---
+
+\newpage
+
+```{r setup, include=FALSE}
+# Set up knit environment
+knitr::opts_chunk$set(echo = F)
+knitr::opts_chunk$set(error = F)
+knitr::opts_chunk$set(warning = F)
+knitr::opts_chunk$set(message = F)
+```
+
+# **Code Appendix**
+
+```{r, ref.label = knitr::all_labels()}
+#| echo: true
+#| eval: false
+```
+

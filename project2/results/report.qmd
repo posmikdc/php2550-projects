@@ -53,7 +53,7 @@ my_rename <- function(df) {
 }
 
 # Load data
-p2_dta <- read_csv("project2.csv") %>%
+p2_dta <- read_csv(paste0(input_folder, "project2.csv")) %>%
   my_rename() %>%
   mutate(
     var = as.factor(var), 
@@ -370,15 +370,17 @@ p.bar <- ggplot(pbar_df,
 # Display the plot
 p.bar
 
+ggsave("../fig/bar-plot.png", plot = p.bar, width = 8, height = 6, dpi = 300)
+
 ```
 
 We are now ready to assess how this problem manifests in causal estimation. Assuming that the black race indicator is indeed a collider, introducing it as a control would introduce bias. In the below visualization, the red arrow in the left diagram "collides" with the treatment. 
 
-![Causal Directed Acyclic Graph (DAG) with the Race Collider](smoking-dag-collider.png){ width=400px height=300px }
+![Causal Directed Acyclic Graph (DAG) with the Race Collider](../fig/smoking-dag-collider.png){ width=400px height=300px }
 
 We are interested in resolving this problem with an instrumental variable (IV) approach, using the use of menthol cigarettes to instrument for the Black race indicator. By using menthol cigarettes as an IV, we can eliminate the colliding path from race to treatment. The causal DAG is shown below.
 
-![Causal Directed Acyclic Graph (DAG) with the Menthol Cigarettes IV](smoking-dag-iv.png){ width=400px height=300px }
+![Causal Directed Acyclic Graph (DAG) with the Menthol Cigarettes IV](../fig/smoking-dag-iv.png){ width=400px height=300px }
 
 Importantly, for a successful IV estimation, we have to fulfill two key assumptions: 
 
