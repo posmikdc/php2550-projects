@@ -8,15 +8,6 @@ This is a README file for the projects completed in the course "Practical Data A
 - Project 2: Regression Analysis with Smoking Cessation Data
 - Project 3: Simulation Study on Optimal Designs in Cluster Randomized Trials
 
-## Folder structure
-
-- README.md: Readme file 
-- `admin`: Administrative files (e.g. project description, project guidelines)
-- `code`: Code (Used for code scripts only)
-- `data`: Raw data (Not used for any intermediate data files)
-- `output`: Output generated from files in the `code` folder (e.g. intermediate data, figures etc.)
-- `results`: Reports and final results (e.g. presentation slides, final report)
-
 ## Note on confidentiality
 
 Depending on data confidentiality, the reader may or may not see a `data` folder. If the data is confidential, the `data` folder will not be excluded from the public repository.
